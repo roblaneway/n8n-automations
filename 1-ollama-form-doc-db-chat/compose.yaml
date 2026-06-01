@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - ai-network
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull llama3.2 && ollama pull nomic-embed-text && wait"]
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - ai-network
+    depends_on:
+      - ollama
+      - pgvector
+
+  pgvector:
+    image: ankane/pgvector:latest
+    container_name: pgvector-container
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    networks:
+      - ai-network
+
+networks:
+  ai-network:
+
+volumes:
+  ollama_data:
+  n8n_data:
+  pgvector_data:
